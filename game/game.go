@@ -6,6 +6,14 @@ import (
 )
 
 type State int
+type UserInput int
+
+// User input enum
+const (
+	Left    UserInput = 0
+	Right             = 1
+	NoInput           = 2
+)
 
 // Game states
 const (
@@ -18,13 +26,14 @@ type Game struct {
 	state         State
 	block         Block
 	blockPosition []int
+	userInput     UserInput
 }
 
 func Start() {
 	ui.ClearScreen()
 	alive := true
 
-	game := Game{state: Spawn, playfield: new([20][10]int), blockPosition: []int{0, 4}, block: IBlockType}
+	game := Game{state: Spawn, playfield: new([20][10]int), blockPosition: []int{0, 4}, block: IBlockType, userInput: NoInput}
 
 	for alive {
 		ui.ClearScreen()
@@ -33,11 +42,19 @@ func Start() {
 		// draw the current state of 2-dimensional array with colors
 		ui.PrintPlayfield(game.playfield)
 		// wait for user input
-		_, _, err := keyboard.GetSingleKey()
+		char, _, err := keyboard.GetSingleKey()
 		if err != nil {
 			panic(err)
 		}
 
+		switch char {
+		case 'a', 'A':
+			game.userInput = Left
+		case 'd', 'D':
+			game.userInput = Right
+		default:
+			game.userInput = NoInput
+		}
 	}
 }
 
@@ -63,6 +80,11 @@ func gameTick(game *Game) {
 		}
 		game.state = Placing
 	} else if game.state == Placing {
+		// handle user input, move block 1 unit left/right
+		if game.userInput != NoInput {
+			moveBlockToLeftOrRight(game)
+		}
+
 		// we need to put block 1 pos down
 		spaceBelowIsFree := checkCollision(game)
 
@@ -70,7 +92,11 @@ func gameTick(game *Game) {
 			moveBlockOneUnitDown(game)
 		} else {
 			placeBlock(game)
-			game.block++
+			if game.block == 6 {
+				game.block = 0
+			} else {
+				game.block++
+			}
 			game.state = Spawn
 		}
 	}
@@ -81,7 +107,7 @@ func checkCollision(game *Game) bool {
 	for y := 0; y < len(game.playfield); y++ {
 		for x := 0; x < len(game.playfield[y]); x++ {
 			if game.playfield[y][x] == 1 {
-				if y+1 >= 19 {
+				if y+1 >= 20 {
 					return false
 				} else if game.playfield[y+1][x] > 1 {
 					return false
@@ -89,13 +115,49 @@ func checkCollision(game *Game) bool {
 			}
 		}
 	}
-
 	return true
 }
 
-func moveBlockOneUnitDown(game *Game) {
-	// clear all 1 in game.playfield
+func moveBlockToLeftOrRight(game *Game) {
+	direction := 0
+	if game.userInput == Left {
+		direction = -1
+	} else if game.userInput == Right {
+		direction = 1
+	}
 
+	moveAllowed := true
+
+	if direction != 0 {
+		// check if x + direction is free
+
+		for y := 0; y < len(game.playfield); y++ {
+			for x := 0; x < len(game.playfield[y]); x++ {
+				if game.playfield[y][x] == 1 {
+					if x+direction > -1 && x+direction < 10 {
+						if game.playfield[y][x+direction] > 1 {
+							moveAllowed = false
+						}
+					} else {
+						moveAllowed = false
+					}
+				}
+			}
+		}
+		
+		if moveAllowed == true {
+			// all good now move block to needed direction
+			if game.userInput == Left {
+				game.blockPosition[1]--
+			} else if game.userInput == Right {
+				game.blockPosition[1]++
+			}
+			drawBlock(game)
+		}
+	}
+}
+
+func drawBlock(game *Game) {
 	for y := 0; y < len(game.playfield); y++ {
 		for x := 0; x < len(game.playfield[y]); x++ {
 			if game.playfield[y][x] == 1 {
@@ -104,8 +166,6 @@ func moveBlockOneUnitDown(game *Game) {
 		}
 	}
 
-	// block position y+
-	game.blockPosition[0]++
 	// draw block on new position
 
 	playfieldYOffset := game.blockPosition[0]
@@ -122,6 +182,13 @@ func moveBlockOneUnitDown(game *Game) {
 			}
 		}
 	}
+}
+
+func moveBlockOneUnitDown(game *Game) {
+	// block position y+
+	game.blockPosition[0]++
+	// draw block on new position
+	drawBlock(game)
 }
 
 func placeBlock(game *Game) {

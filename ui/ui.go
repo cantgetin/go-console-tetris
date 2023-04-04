@@ -25,6 +25,10 @@ func PrintPlayfield(playfield *[20][10]int) {
 	}
 }
 
+func PrintDebugInfo(playfield *[20][10]int) {
+
+}
+
 //func PrintPlayfield(playfield *[20][10]int) {
 //	for i := 0; i < len(playfield); i++ {
 //		for j := 0; j < len(playfield[i]); j++ {
