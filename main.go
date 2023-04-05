@@ -4,7 +4,6 @@ import (
 	"awesomeProject/game"
 	"awesomeProject/ui"
 	"fmt"
-	"github.com/TwiN/go-color"
 	"github.com/eiannone/keyboard"
 )
 
@@ -13,7 +12,7 @@ func main() {
 }
 
 func menu() {
-	menuItems := [3]string{"Start", "About", "Exit"}
+	menuItems := []string{"Start", "About", "Exit"}
 	selectedItem := 0
 	alive := true
 
@@ -29,13 +28,7 @@ func menu() {
 	for alive {
 		// draw menu
 		ui.ClearScreen()
-		for i := 0; i < len(menuItems); i++ {
-			if i == selectedItem {
-				fmt.Println(color.OverWhite(color.InBlack(menuItems[i])))
-			} else {
-				fmt.Println(color.InWhite(menuItems[i]))
-			}
-		}
+		ui.PrintMenu(menuItems, selectedItem)
 
 		// wait for user input
 		char, _, err := keyboard.GetSingleKey()
@@ -71,5 +64,3 @@ func menu() {
 func about() {
 
 }
-
-

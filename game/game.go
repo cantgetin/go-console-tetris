@@ -3,6 +3,7 @@ package game
 import (
 	"awesomeProject/ui"
 	"github.com/eiannone/keyboard"
+	"strconv"
 )
 
 type State int
@@ -41,6 +42,7 @@ func Start() {
 		gameTick(&game)
 		// draw the current state of 2-dimensional array with colors
 		ui.PrintPlayfield(game.playfield)
+		ui.PrintDebugInfo("y:" + strconv.Itoa(game.blockPosition[0]) + " x: " + strconv.Itoa(game.blockPosition[1]))
 		// wait for user input
 		char, _, err := keyboard.GetSingleKey()
 		if err != nil {
@@ -144,7 +146,7 @@ func moveBlockToLeftOrRight(game *Game) {
 				}
 			}
 		}
-		
+
 		if moveAllowed == true {
 			// all good now move block to needed direction
 			if game.userInput == Left {
