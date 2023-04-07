@@ -48,12 +48,9 @@ func PrintPlayfield(playfield *[20][10]int) {
 			case 0:
 				termbox.SetCell(x, y, '█', termbox.ColorMagenta, termbox.ColorMagenta)
 				termbox.SetCell(x+1, y, '█', termbox.ColorMagenta, termbox.ColorMagenta)
-			case 2:
-				termbox.SetCell(x, y, '█', termbox.ColorRed, termbox.ColorRed)
-				termbox.SetCell(x+1, y, '█', termbox.ColorRed, termbox.ColorRed)
 			default:
-				termbox.SetCell(x, y, '█', termbox.ColorWhite, termbox.ColorWhite)
-				termbox.SetCell(x+1, y, '█', termbox.ColorWhite, termbox.ColorWhite)
+				termbox.SetCell(x, y, '█', termbox.ColorWhite, termbox.ColorBlack)
+				termbox.SetCell(x+1, y, '█', termbox.ColorWhite, termbox.ColorBlack)
 			}
 		}
 	}

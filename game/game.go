@@ -14,7 +14,8 @@ type UserInput int
 const (
 	Left    UserInput = 0
 	Right             = 1
-	NoInput           = 2
+	Down              = 2
+	NoInput           = 3
 )
 
 // Game states
@@ -35,7 +36,12 @@ func Start() {
 	ui.ClearScreen()
 	alive := true
 
-	game := Game{state: Spawn, playfield: new([20][10]int), blockPosition: []int{0, 4}, block: IBlockType, userInput: NoInput}
+	game := Game{
+		state:         Spawn,
+		playfield:     new([20][10]int),
+		blockPosition: []int{0, 4},
+		block:         IBlockType,
+		userInput:     NoInput}
 
 	eventChan := make(chan termbox.Event)
 	go func() {
@@ -49,45 +55,47 @@ func Start() {
 	tickTimer := time.NewTimer(tickDuration)
 
 	for alive {
-
-		ui.ClearScreen()
 		// game logic
 		gameTick(&game)
-
 		// draw the current state of 2-dimensional array with colors
+		ui.ClearScreen()
 		ui.PrintPlayfield(game.playfield)
 
-		// wait for a short period of time
+		// wait for a short period of time and reset the timer for the next tick
 		<-tickTimer.C
-
-		// Reset the timer for the next tick
 		tickTimer.Reset(tickDuration)
 
 		ui.PrintDebugInfo("y:" + strconv.Itoa(game.blockPosition[0]) + " x: " + strconv.Itoa(game.blockPosition[1]))
-		game.userInput = NoInput
+		alive = handleUserInput(&game, eventChan)
+	}
+}
 
-		// check for user input
-		select {
-		case event := <-eventChan:
-			for len(eventChan) > 0 {
-				<-eventChan
-			}
-
-			if event.Type == termbox.EventKey {
-				switch event.Key {
-				case termbox.KeyArrowLeft:
-					game.userInput = Left
-				case termbox.KeyArrowRight:
-					game.userInput = Right
-				default:
-					game.userInput = NoInput
-				}
-			}
-		default:
-			// no event waiting, continue the game
+func handleUserInput(game *Game, eventChan chan termbox.Event) bool {
+	// check for user input
+	select {
+	case event := <-eventChan:
+		for len(eventChan) > 0 {
+			<-eventChan
 		}
 
+		if event.Type == termbox.EventKey {
+			switch event.Key {
+			case termbox.KeyArrowLeft:
+				game.userInput = Left
+			case termbox.KeyArrowRight:
+				game.userInput = Right
+			case termbox.KeyArrowDown:
+				game.userInput = Down
+			case termbox.KeyEsc:
+				return false
+			default:
+				game.userInput = NoInput
+			}
+		}
+	default:
+		// no event waiting, continue the game
 	}
+	return true
 }
 
 func gameTick(game *Game) {
@@ -113,14 +121,18 @@ func gameTick(game *Game) {
 		game.state = Placing
 	} else if game.state == Placing {
 		// handle user input, move block 1 unit left/right
-		if game.userInput != NoInput {
+		if game.userInput == Left || game.userInput == Right {
 			moveBlockToLeftOrRight(game)
+		} else if game.userInput == Down {
+			// if pressed down then force move down block until it collides
+			moveBlockAllTheWayDown(game)
+			game.userInput = NoInput
+			return
 		}
 
 		// we need to put block 1 pos down
-		spaceBelowIsFree := checkCollision(game)
 
-		if spaceBelowIsFree {
+		if noCollisionBelow(game) {
 			moveBlockOneUnitDown(game)
 		} else {
 			placeBlock(game)
@@ -132,9 +144,10 @@ func gameTick(game *Game) {
 			game.state = Spawn
 		}
 	}
+	game.userInput = NoInput
 }
 
-func checkCollision(game *Game) bool {
+func noCollisionBelow(game *Game) bool {
 	// check places on playfield with value 1
 	for y := 0; y < len(game.playfield); y++ {
 		for x := 0; x < len(game.playfield[y]); x++ {
@@ -184,12 +197,14 @@ func moveBlockToLeftOrRight(game *Game) {
 			} else if game.userInput == Right {
 				game.blockPosition[1]++
 			}
-			drawBlock(game)
+			drawBlockOnPlayfield(game)
 		}
 	}
 }
 
-func drawBlock(game *Game) {
+func drawBlockOnPlayfield(game *Game) {
+
+	// clear block
 	for y := 0; y < len(game.playfield); y++ {
 		for x := 0; x < len(game.playfield[y]); x++ {
 			if game.playfield[y][x] == 1 {
@@ -208,8 +223,10 @@ func drawBlock(game *Game) {
 	for y := 0 + playfieldYOffset; y < len(currentBlock)+playfieldYOffset; y++ {
 		for x := 0 + playfieldXOffset; x < len(currentBlock[y-playfieldYOffset])+playfieldXOffset; x++ {
 			if currentBlock[y-playfieldYOffset][x-playfieldXOffset] != 0 {
-				if game.playfield[y][x] == 0 {
-					game.playfield[y][x] = currentBlock[y-playfieldYOffset][x-playfieldXOffset]
+				if y > -1 && y < 20 && x > -1 && x < 10 {
+					if game.playfield[y][x] == 0 {
+						game.playfield[y][x] = currentBlock[y-playfieldYOffset][x-playfieldXOffset]
+					}
 				}
 			}
 		}
@@ -220,7 +237,24 @@ func moveBlockOneUnitDown(game *Game) {
 	// block position y+
 	game.blockPosition[0]++
 	// draw block on new position
-	drawBlock(game)
+	drawBlockOnPlayfield(game)
+}
+
+func moveBlockAllTheWayDown(game *Game) {
+	for {
+		if noCollisionBelow(game) == true {
+			moveBlockOneUnitDown(game)
+		} else {
+			placeBlock(game)
+			if game.block == 6 {
+				game.block = 0
+			} else {
+				game.block++
+			}
+			game.state = Spawn
+			break
+		}
+	}
 }
 
 func placeBlock(game *Game) {
