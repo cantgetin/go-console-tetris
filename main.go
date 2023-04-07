@@ -27,6 +27,7 @@ func menu() {
 
 	for alive {
 		// draw menu
+		ui.Init()
 		ui.ClearScreen()
 		ui.PrintMenu(menuItems, selectedItem)
 

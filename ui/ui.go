@@ -2,7 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"github.com/TwiN/go-color"
+	"github.com/nsf/termbox-go"
 	"syscall"
 	"unsafe"
 )
@@ -12,34 +12,52 @@ var (
 	procSetConsoleTitle = modkernel32.NewProc("SetConsoleTitleW")
 )
 
+func Init() error {
+	err := termbox.Init()
+	if err != nil {
+		return err
+	}
+	termbox.SetOutputMode(termbox.Output256)
+	return nil
+}
+
 func ClearScreen() {
-	fmt.Print("\033[2J") // clear screen
-	fmt.Print("\033[H")  // move cursor to top-left corner
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func PrintMenu(menuItems []string, selectedItem int) {
-	for i := 0; i < len(menuItems); i++ {
+	for i, item := range menuItems {
+		x, y := 2, i+2
+		fg, bg := termbox.ColorWhite, termbox.ColorBlack
 		if i == selectedItem {
-			fmt.Println(color.OverWhite(color.InBlack(menuItems[i])))
-		} else {
-			fmt.Println(color.InWhite(menuItems[i]))
+			fg, bg = termbox.ColorBlack, termbox.ColorWhite
+		}
+		for _, char := range item {
+			termbox.SetCell(x, y, char, fg, bg)
+			x++
 		}
 	}
+	termbox.Flush()
 }
 
 func PrintPlayfield(playfield *[20][10]int) {
 	for i := 0; i < len(playfield); i++ {
 		for j := 0; j < len(playfield[i]); j++ {
-			if playfield[i][j] == 0 {
-				fmt.Print(color.InPurple("██"))
-			} else if playfield[i][j] == 2 {
-				fmt.Print(color.InRed("██"))
-			} else {
-				fmt.Print(color.InWhite("██"))
+			x, y := j*2, i
+			switch playfield[i][j] {
+			case 0:
+				termbox.SetCell(x, y, '█', termbox.ColorMagenta, termbox.ColorMagenta)
+				termbox.SetCell(x+1, y, '█', termbox.ColorMagenta, termbox.ColorMagenta)
+			case 2:
+				termbox.SetCell(x, y, '█', termbox.ColorRed, termbox.ColorRed)
+				termbox.SetCell(x+1, y, '█', termbox.ColorRed, termbox.ColorRed)
+			default:
+				termbox.SetCell(x, y, '█', termbox.ColorWhite, termbox.ColorWhite)
+				termbox.SetCell(x+1, y, '█', termbox.ColorWhite, termbox.ColorWhite)
 			}
 		}
-		fmt.Println()
 	}
+	termbox.Flush()
 }
 
 func PrintDebugInfo(title string) {
@@ -54,18 +72,3 @@ func PrintDebugInfo(title string) {
 		fmt.Println("Error:", err)
 	}
 }
-
-//func PrintPlayfield(playfield *[20][10]int) {
-//	for i := 0; i < len(playfield); i++ {
-//		for j := 0; j < len(playfield[i]); j++ {
-//			if playfield[i][j] == 0 {
-//				fmt.Print(playfield[i][j])
-//			} else if playfield[i][j] == 2 {
-//				fmt.Print(playfield[i][j])
-//			} else {
-//				fmt.Print(playfield[i][j])
-//			}
-//		}
-//		fmt.Println()
-//	}
-//}
