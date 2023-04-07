@@ -2,8 +2,9 @@ package game
 
 import (
 	"awesomeProject/ui"
-	"github.com/eiannone/keyboard"
+	"github.com/nsf/termbox-go"
 	"strconv"
+	"time"
 )
 
 type State int
@@ -36,27 +37,56 @@ func Start() {
 
 	game := Game{state: Spawn, playfield: new([20][10]int), blockPosition: []int{0, 4}, block: IBlockType, userInput: NoInput}
 
+	eventChan := make(chan termbox.Event)
+	go func() {
+		for {
+			event := termbox.PollEvent()
+			eventChan <- event
+		}
+	}()
+
+	tickDuration := 250 * time.Millisecond
+	tickTimer := time.NewTimer(tickDuration)
+
 	for alive {
+
 		ui.ClearScreen()
 		// game logic
 		gameTick(&game)
+
 		// draw the current state of 2-dimensional array with colors
 		ui.PrintPlayfield(game.playfield)
+
+		// wait for a short period of time
+		<-tickTimer.C
+
+		// Reset the timer for the next tick
+		tickTimer.Reset(tickDuration)
+
 		ui.PrintDebugInfo("y:" + strconv.Itoa(game.blockPosition[0]) + " x: " + strconv.Itoa(game.blockPosition[1]))
-		// wait for user input
-		char, _, err := keyboard.GetSingleKey()
-		if err != nil {
-			panic(err)
+		game.userInput = NoInput
+
+		// check for user input
+		select {
+		case event := <-eventChan:
+			for len(eventChan) > 0 {
+				<-eventChan
+			}
+
+			if event.Type == termbox.EventKey {
+				switch event.Key {
+				case termbox.KeyArrowLeft:
+					game.userInput = Left
+				case termbox.KeyArrowRight:
+					game.userInput = Right
+				default:
+					game.userInput = NoInput
+				}
+			}
+		default:
+			// no event waiting, continue the game
 		}
 
-		switch char {
-		case 'a', 'A':
-			game.userInput = Left
-		case 'd', 'D':
-			game.userInput = Right
-		default:
-			game.userInput = NoInput
-		}
 	}
 }
 
