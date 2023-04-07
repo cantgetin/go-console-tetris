@@ -32,7 +32,7 @@ type Game struct {
 	userInput     UserInput
 }
 
-func Start() {
+func Start(menu func()) {
 	ui.ClearScreen()
 	alive := true
 
@@ -68,6 +68,7 @@ func Start() {
 		ui.PrintDebugInfo("y:" + strconv.Itoa(game.blockPosition[0]) + " x: " + strconv.Itoa(game.blockPosition[1]))
 		alive = handleUserInput(&game, eventChan)
 	}
+	menu()
 }
 
 func handleUserInput(game *Game, eventChan chan termbox.Event) bool {

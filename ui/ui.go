@@ -57,6 +57,17 @@ func PrintPlayfield(playfield *[20][10]int) {
 	termbox.Flush()
 }
 
+func PrintInfoOnScreen(text string) {
+	w, h := termbox.Size()
+	x, y := w/2-len(text)/2, h/2
+
+	for _, c := range text {
+		termbox.SetCell(x, y, c, termbox.ColorDefault, termbox.ColorDefault)
+		x++
+	}
+	termbox.Flush()
+}
+
 func PrintDebugInfo(title string) {
 	titlePtr, err := syscall.UTF16PtrFromString(title)
 	if err != nil {
