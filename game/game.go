@@ -15,7 +15,8 @@ const (
 	Left    UserInput = 0
 	Right             = 1
 	Down              = 2
-	NoInput           = 3
+	Rotate            = 3
+	NoInput           = 4
 )
 
 // Game states
@@ -87,6 +88,8 @@ func handleUserInput(game *Game, eventChan chan termbox.Event) bool {
 				game.userInput = Right
 			case termbox.KeyArrowDown:
 				game.userInput = Down
+			case termbox.KeySpace:
+				game.userInput = Rotate
 			case termbox.KeyEsc:
 				return false
 			default:
@@ -129,6 +132,8 @@ func gameTick(game *Game) {
 			moveBlockAllTheWayDown(game)
 			game.userInput = NoInput
 			return
+		} else if game.userInput == Rotate {
+			rotateCurrentBlockClockwise(game)
 		}
 
 		// we need to put block 1 pos down
@@ -256,6 +261,22 @@ func moveBlockAllTheWayDown(game *Game) {
 			break
 		}
 	}
+}
+
+func rotateCurrentBlockClockwise(game *Game) {
+
+	var rotatedBlock [4][4]int
+
+	n := len(Blocks[game.block])
+	m := len(Blocks[game.block][0])
+
+	for i := 0; i < n; i++ {
+		for j := 0; j < m; j++ {
+			rotatedBlock[j][n-i-1] = Blocks[game.block][i][j]
+		}
+	}
+
+	Blocks[game.block] = rotatedBlock
 }
 
 func placeBlock(game *Game) {
