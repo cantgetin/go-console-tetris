@@ -35,6 +35,8 @@ type Game struct {
 
 func Start(menu func()) {
 	ui.ClearScreen()
+	printControls()
+
 	alive := true
 
 	game := Game{
@@ -59,7 +61,6 @@ func Start(menu func()) {
 		// game logic
 		gameTick(&game)
 		// draw the current state of 2-dimensional array with colors
-		ui.ClearScreen()
 		ui.PrintPlayfield(game.playfield)
 
 		// wait for a short period of time and reset the timer for the next tick
@@ -100,6 +101,14 @@ func handleUserInput(game *Game, eventChan chan termbox.Event) bool {
 		// no event waiting, continue the game
 	}
 	return true
+}
+
+func printControls() {
+	ui.PrintInfoOnScreenAtXY("Controls: ", 21, 1)
+	ui.PrintInfoOnScreenAtXY("Arrow left: move left", 21, 3)
+	ui.PrintInfoOnScreenAtXY("Arrow right: move right", 21, 4)
+	ui.PrintInfoOnScreenAtXY("Space: rotate clockwise", 21, 5)
+	ui.PrintInfoOnScreenAtXY("Arrow down: drop block", 21, 6)
 }
 
 func gameTick(game *Game) {
